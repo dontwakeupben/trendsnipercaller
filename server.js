@@ -8,6 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files - important for Vercel
+app.use(express.static(path.join(__dirname)));
+
 // Environment variables (will use Vercel environment variables in production)
 const UIPATH_CONFIG = {
     url: process.env.UIPATH_API_URL || 'https://cloud.uipath.com/benangelo/DefaultTenant/orchestrator_/t/de2d5bde-ff58-4576-9e9a-6364e059cd7c/trendsniper',
@@ -97,14 +100,19 @@ app.post('/api/uipath', async (req, res) => {
     }
 });
 
-// Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Test endpoint
+app.get('/test', (req, res) => {
+    res.json({ message: 'Server is working!', environment: process.env.NODE_ENV || 'development' });
+});
+
+// Serve the HTML file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Export the Express API for Vercel

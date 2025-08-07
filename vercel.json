@@ -1,13 +1,19 @@
 {
     "version": 2,
-    "routes": [
+    "builds": [
         {
-            "src": "/api/uipath",
-            "dest": "/api/uipath.js"
+            "src": "server.js",
+            "use": "@vercel/node"
         },
         {
+            "src": "index.html",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
             "src": "/(.*)",
-            "dest": "/index.html"
+            "dest": "server.js"
         }
     ]
 }
