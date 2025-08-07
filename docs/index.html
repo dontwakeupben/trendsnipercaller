@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendSniper API Caller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>TrendSniper API Caller</h1>
+        <p>Configure and start your UiPath process</p>
+
+        <div class="warning">
+            <strong>⚠️ CORS Notice:</strong> This static version may encounter CORS issues when calling external APIs directly. 
+            For production use, deploy the full backend version.
+        </div>
+
+        <div style="margin: 20px 0;">
+            <label for="shareCount">Share Count:</label>
+            <input type="number" id="shareCount" value="4" style="width: 100px;">
+
+            <label for="runTime">Run Time:</label>
+            <input type="number" id="runTime" value="2" style="width: 100px;">
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="benn.angeloo1@gmail.com" style="width: 200px;">
+
+            <label for="apiUrl">UiPath API URL:</label>
+            <input type="url" id="apiUrl" placeholder="https://cloud.uipath.com/..." style="width: 300px;">
+
+            <label for="bearerToken">Bearer Token:</label>
+            <input type="password" id="bearerToken" placeholder="Enter your Bearer token" style="width: 300px;">
+        </div>
+
+        <button id="callApiBtn" onclick="callUiPathAPI()">
+            Start UiPath Process
+        </button>
+
+        <div id="response" class="response"></div>
+    </div>
+
+    <script>
+        async function callUiPathAPI() {
+            const button = document.getElementById('callApiBtn');
+            const responseDiv = document.getElementById('response');
+
+            // Disable button and show loading state
+            button.disabled = true;
+            button.textContent = 'Calling API...';
+            responseDiv.style.display = 'none';
+
+            try {
+                // Get values from input fields
+                const shareCountValue = document.getElementById('shareCount').value;
+                const runTimeValue = document.getElementById('runTime').value;
+                const emailValue = document.getElementById('email').value;
+                const apiUrl = document.getElementById('apiUrl').value;
+                const bearerToken = document.getElementById('bearerToken').value;
+
+                // Validate inputs
+                if (!apiUrl) {
+                    throw new Error('Please enter the UiPath API URL');
+                }
+                if (!bearerToken) {
+                    throw new Error('Please enter your Bearer token');
+                }
+
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailValue)) {
+                    throw new Error(`Invalid email format: "${emailValue}". Please enter a valid email address.`);
+                }
+
+                // Validate numeric inputs
+                if (isNaN(shareCountValue) || shareCountValue < 1) {
+                    throw new Error('Share Count must be a positive number');
+                }
+                if (isNaN(runTimeValue) || runTimeValue < 1) {
+                    throw new Error('Run Time must be a positive number');
+                }
+
+                // Prepare the request payload
+                const payload = {
+                    in_shareCount: parseInt(shareCountValue),
+                    in_runTime: parseInt(runTimeValue),
+                    in_email: emailValue.trim()
+                };
+
+                console.log('Payload:', payload);
+
+                // Make the API call directly to UiPath
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${bearerToken}`,
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Success response:', data);
+
+                // Show success response
+                showResponse('API call successful!', data, 'success');
+
+            } catch (error) {
+                console.error('Detailed error:', error);
+                
+                let errorMessage = error.message;
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'CORS error or network issue. Consider using the backend version for production.';
+                }
+                
+                showResponse('Error calling API', {
+                    error: errorMessage,
+                    type: error.name,
+                    details: 'Check browser console for more details'
+                }, 'error');
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                button.textContent = 'Start UiPath Process';
+            }
+        }
+
+        function showResponse(message, data, type) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.className = `response ${type}`;
+            responseDiv.innerHTML = `
+                <h3>${message}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            responseDiv.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>
