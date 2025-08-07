@@ -92,7 +92,8 @@
         <p>Configure and start your UiPath process</p>
 
         <div class="warning">
-            <strong>⚠️ CORS Notice:</strong> This static version may encounter CORS issues when calling external APIs directly. 
+            <strong>⚠️ CORS Notice:</strong> This static version may encounter CORS issues when calling external APIs
+            directly.
             For production use, deploy the full backend version.
         </div>
 
@@ -195,12 +196,12 @@
 
             } catch (error) {
                 console.error('Detailed error:', error);
-                
+
                 let errorMessage = error.message;
                 if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
                     errorMessage = 'CORS error or network issue. Consider using the backend version for production.';
                 }
-                
+
                 showResponse('Error calling API', {
                     error: errorMessage,
                     type: error.name,

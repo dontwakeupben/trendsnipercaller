@@ -1,24 +1,19 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+export default async function handler(req, res) {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Environment variables (will use Vercel environment variables in production)
-const UIPATH_CONFIG = {
-    url: process.env.UIPATH_API_URL || 'https://cloud.uipath.com/benangelo/DefaultTenant/orchestrator_/t/de2d5bde-ff58-4576-9e9a-6364e059cd7c/trendsniper',
-    headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.UIPATH_BEARER_TOKEN || 'rt_3CE36E3BA69146817149CA57669C51A5195B49B77F7247E87E5CC6D9F425ED04-1'}`,
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
     }
-};
 
-// API endpoint to proxy UiPath calls
-app.post('/api/uipath', async (req, res) => {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
     try {
         console.log('Received request:', req.body);
 
@@ -45,7 +40,15 @@ app.post('/api/uipath', async (req, res) => {
         };
 
         console.log('Validated payload:', validatedPayload);
-        console.log('Email validation passed for:', validatedPayload.in_email);
+
+        // UiPath API configuration
+        const UIPATH_CONFIG = {
+            url: process.env.UIPATH_API_URL || 'https://cloud.uipath.com/benangelo/DefaultTenant/orchestrator_/t/de2d5bde-ff58-4576-9e9a-6364e059cd7c/trendsniper',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.UIPATH_BEARER_TOKEN || 'rt_3CE36E3BA69146817149CA57669C51A5195B49B77F7247E87E5CC6D9F425ED04-1'}`,
+            }
+        };
 
         // Make the request to UiPath
         const response = await fetch(UIPATH_CONFIG.url, {
@@ -55,7 +58,6 @@ app.post('/api/uipath', async (req, res) => {
         });
 
         console.log('UiPath response status:', response.status);
-        console.log('UiPath response headers:', [...response.headers.entries()]);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -95,26 +97,4 @@ app.post('/api/uipath', async (req, res) => {
             message: error.message
         });
     }
-});
-
-// Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Export the Express API for Vercel
-module.exports = app;
-
-// For local development
-if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`Server running at http://localhost:${PORT}`);
-        console.log('Open your browser and go to http://localhost:3000');
-    });
 }
